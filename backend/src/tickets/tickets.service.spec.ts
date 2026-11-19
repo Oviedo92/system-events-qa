@@ -232,4 +232,42 @@ describe('TicketsService', () => {
       new BadRequestException('La entrada ya fue utilizada o no está disponible'),
     );
   });
+
+  // =========================================================
+  // TDD FEATURE: BATCH VALIDATION (validateBatch)
+  // =========================================================
+
+  it('should validate a batch of active tickets and return summary (TDD)', async () => {
+    const spyValidate = jest
+      .spyOn(ticketsService, 'validate')
+      .mockResolvedValueOnce({ id: 1, code: 'CODE-1', status: 'USED' } as any)
+      .mockResolvedValueOnce({ id: 2, code: 'CODE-2', status: 'USED' } as any);
+
+    const result = await (ticketsService as any).validateBatch(
+      ['CODE-1', 'CODE-2'],
+      5,
+    );
+
+    expect(spyValidate).toHaveBeenCalledTimes(2);
+    expect(result).toEqual({
+      validatedCount: 2,
+      codes: ['CODE-1', 'CODE-2'],
+    });
+  });
+
+  it('should throw BadRequestException if batch is empty or exceeds 10 tickets (TDD)', async () => {
+    await expect(
+      (ticketsService as any).validateBatch([], 5),
+    ).rejects.toThrow(
+      new BadRequestException('El lote debe contener entre 1 y 10 entradas'),
+    );
+
+    const elevenCodes = Array.from({ length: 11 }, (_, i) => `CODE-${i}`);
+    await expect(
+      (ticketsService as any).validateBatch(elevenCodes, 5),
+    ).rejects.toThrow(
+      new BadRequestException('El lote debe contener entre 1 y 10 entradas'),
+    );
+  });
+
 });
