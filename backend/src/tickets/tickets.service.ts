@@ -305,6 +305,29 @@ export class TicketsService {
   }
 
   /**
+   * TDD: Valida un lote de entradas de forma secuencial (máximo 10 por operación).
+   */
+  async validateBatch(codes: string[], userId: number) {
+    if (!Array.isArray(codes) || codes.length === 0 || codes.length > 10) {
+      throw new BadRequestException(
+        'El lote debe contener entre 1 y 10 entradas',
+      );
+    }
+
+    const validatedCodes: string[] = [];
+
+    for (const code of codes) {
+      await this.validate(code, userId);
+      validatedCodes.push(code.trim());
+    }
+
+    return {
+      validatedCount: validatedCodes.length,
+      codes: validatedCodes,
+    };
+  }
+
+  /**
    * Obtiene todas las entradas de una orden.
    */
   async findAllByOrder(orderId: number) {
