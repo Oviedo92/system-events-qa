@@ -305,25 +305,44 @@ export class TicketsService {
   }
 
   /**
-   * TDD: Valida un lote de entradas de forma secuencial (máximo 10 por operación).
+   * TDD: refactor Valida un lote de entradas de forma secuencial 
+   * (máximo 10 por operación).
+   * Vamos a refactorizar validateBatch en tickets.service.ts extrayendo 
+   * la validación del tamaño del lote (MAX_BATCH_SIZE = 10) y normalizando/eliminando duplicados con 
+   * Set, además de quitar el as any del test en tickets.service.spec.ts.
+   */
+  private static readonly MAX_BATCH_SIZE = 10;
+
+  /**
+   * Valida un lote único de entradas de forma secuencial.
    */
   async validateBatch(codes: string[], userId: number) {
-    if (!Array.isArray(codes) || codes.length === 0 || codes.length > 10) {
+    if (!Array.isArray(codes)) {
       throw new BadRequestException(
         'El lote debe contener entre 1 y 10 entradas',
       );
     }
 
-    const validatedCodes: string[] = [];
+    const uniqueNormalizedCodes = [
+      ...new Set(codes.map((c) => (typeof c === 'string' ? c.trim() : ''))),
+    ];
 
-    for (const code of codes) {
+    if (
+      uniqueNormalizedCodes.length === 0 ||
+      uniqueNormalizedCodes.length > TicketsService.MAX_BATCH_SIZE
+    ) {
+      throw new BadRequestException(
+        'El lote debe contener entre 1 y 10 entradas',
+      );
+    }
+
+    for (const code of uniqueNormalizedCodes) {
       await this.validate(code, userId);
-      validatedCodes.push(code.trim());
     }
 
     return {
-      validatedCount: validatedCodes.length,
-      codes: validatedCodes,
+      validatedCount: uniqueNormalizedCodes.length,
+      codes: uniqueNormalizedCodes,
     };
   }
 
