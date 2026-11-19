@@ -1,0 +1,20 @@
+.event-availability-circle {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.event-availability-circle-center {
+  width: 50px;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff;
+  color: #15172b;
+  font-size: 14px;
+  font-weight: 700;
+}

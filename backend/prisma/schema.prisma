@@ -1,0 +1,489 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  USER
+  PROMOTER
+  MODERATOR
+  ADMIN
+}
+
+enum PromoterApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id                  Int                  @id @default(autoincrement())
+  name                String
+  email               String               @unique
+  passwordHash        String
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  role                UserRole             @default(USER)
+  promoterApplication PromoterApplication?
+  carts               Cart[]
+  events              Event[]
+  orders              Order[]
+  refreshTokens       RefreshToken[]
+  reservations        Reservation[]
+  tickets             Ticket[]
+}
+
+model PromoterApplication {
+  id             Int                       @id @default(autoincrement())
+  businessName   String                    @db.VarChar(120)
+  documentNumber String                    @db.VarChar(30)
+  phone          String                    @db.VarChar(30)
+  description    String                    @db.Text
+  status         PromoterApplicationStatus @default(PENDING)
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+  reviewedAt     DateTime?
+
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Event {
+  id            Int                 @id @default(autoincrement())
+  name          String
+  description   String?
+  capacity      Int
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  organizerId   Int
+  templateId    Int
+  address       String?
+  city          String
+  coverImageUrl String?
+  endAt         DateTime
+  latitude      Decimal?            @db.Decimal(10, 7)
+  longitude     Decimal?            @db.Decimal(10, 7)
+  slug          String              @unique
+  startAt       DateTime
+  status        String              @default("DRAFT")
+  venue         String
+  categoryId    Int
+  category      EventCategory       @relation(fields: [categoryId], references: [id])
+  carts         Cart[]
+  organizer     User                @relation(fields: [organizerId], references: [id])
+  template      EventTemplate       @relation(fields: [templateId], references: [id])
+  configuration EventConfiguration?
+  images        EventImage[]
+  orders        Order[]
+  products      Product[]
+  promotions    Promotion[]
+  reservations  Reservation[]
+  seats         Seat[]
+  tickets       Ticket[]
+  ticketTypes   TicketType[]
+  zones         Zone[]
+}
+
+model EventCategory {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique @db.VarChar(80)
+  slug        String   @unique @db.VarChar(80)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  events Event[]
+}
+
+model RefreshToken {
+  id        Int       @id @default(autoincrement())
+  tokenHash String
+  expiresAt DateTime
+  revokedAt DateTime?
+  userId    Int
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model EventTemplate {
+  id             Int      @id @default(autoincrement())
+  name           String
+  description    String?
+  usesZones      Boolean  @default(false)
+  usesSeats      Boolean  @default(false)
+  usesProducts   Boolean  @default(false)
+  usesPromotions Boolean  @default(false)
+  usesQr         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  events         Event[]
+}
+
+model EventConfiguration {
+  id             Int      @id @default(autoincrement())
+  usesZones      Boolean  @default(false)
+  usesSeats      Boolean  @default(false)
+  usesProducts   Boolean  @default(false)
+  usesPromotions Boolean  @default(false)
+  usesQr         Boolean  @default(true)
+  eventId        Int      @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  event          Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model Zone {
+  id          Int          @id @default(autoincrement())
+  name        String
+  capacity    Int
+  description String?
+  eventId     Int
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  seats       Seat[]
+  ticketTypes TicketType[]
+  event       Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model Seat {
+  id               Int               @id @default(autoincrement())
+  row              String
+  number           Int
+  status           String            @default("AVAILABLE")
+  eventId          Int
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  zoneId           Int?
+  orderItems       OrderItem[]
+  reservationItems ReservationItem[]
+  event            Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  zone             Zone?             @relation(fields: [zoneId], references: [id])
+  tickets          Ticket[]
+
+  @@unique([eventId, row, number])
+}
+
+model TicketType {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  price       Decimal   @db.Decimal(10, 2)
+  currency    String    @default("COP")
+  quantity    Int
+  available   Int
+  eventId     Int
+  zoneId      Int?
+  startSaleAt DateTime?
+  endSaleAt   DateTime?
+  deletedAt   DateTime?
+
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  status           String                @default("ACTIVE")
+  cartItems        CartItem[]
+  orderItems       OrderItem[]
+  promotionLinks   PromotionTicketType[]
+  reservationItems ReservationItem[]
+  tickets          Ticket[]
+  event            Event                 @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  zone             Zone?                 @relation(fields: [zoneId], references: [id], onDelete: SetNull)
+}
+
+model Product {
+  id             Int                @id @default(autoincrement())
+  name           String
+  description    String?
+  eventId        Int
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  categoryId     Int
+  isActive       Boolean            @default(true)
+  category       ProductCategory    @relation(fields: [categoryId], references: [id])
+  event          Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  images         ProductImage[]
+  variants       ProductVariant[]
+  options        ProductOption[]
+  promotionLinks PromotionProduct[]
+}
+
+model ProductCategory {
+  id          Int       @id @default(autoincrement())
+  name        String
+  slug        String    @unique
+  description String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
+}
+
+model ProductVariant {
+  id               Int                         @id @default(autoincrement())
+  sku              String                      @unique
+  price            Decimal                     @db.Decimal(10, 2)
+  quantity         Int
+  available        Int
+  productId        Int
+  isActive         Boolean                     @default(true)
+  createdAt        DateTime                    @default(now())
+  updatedAt        DateTime                    @updatedAt
+  cartItems        CartItem[]
+  orderItems       OrderItem[]
+  reservationItems ReservationItem[]
+  product          Product                     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  optionValues     ProductVariantOptionValue[]
+}
+
+model ProductOption {
+  id        Int     @id @default(autoincrement())
+  name      String
+  position  Int     @default(0)
+  isActive  Boolean @default(true)
+  productId Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
+  values  ProductOptionValue[]
+
+  @@unique([productId, name])
+}
+
+model ProductOptionValue {
+  id       Int     @id @default(autoincrement())
+  value    String
+  position Int     @default(0)
+  isActive Boolean @default(true)
+  optionId Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  option   ProductOption               @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  variants ProductVariantOptionValue[]
+
+  @@unique([optionId, value])
+}
+
+model ProductVariantOptionValue {
+  variantId     Int
+  optionValueId Int
+
+  variant     ProductVariant     @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  optionValue ProductOptionValue @relation(fields: [optionValueId], references: [id], onDelete: Cascade)
+
+  @@id([variantId, optionValueId])
+}
+
+model ProductImage {
+  id        Int      @id @default(autoincrement())
+  url       String
+  altText   String?
+  publicId  String
+  position  Int      @default(0)
+  productId Int
+  createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model EventImage {
+  id        Int      @id @default(autoincrement())
+  url       String
+  publicId  String
+  altText   String?
+  position  Int      @default(0)
+  eventId   Int
+  createdAt DateTime @default(now())
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model Promotion {
+  id           Int                   @id @default(autoincrement())
+  name         String
+  description  String?
+  code         String?
+  type         String
+  value        Decimal               @db.Decimal(10, 2)
+  minSubtotal  Decimal?              @db.Decimal(10, 2)
+  startsAt     DateTime?
+  endsAt       DateTime?
+  maxUses      Int?
+  currentUses  Int                   @default(0)
+  isActive     Boolean               @default(true)
+  appliesToAll Boolean               @default(false)
+  eventId      Int
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  cartItems    Cart[]
+  event        Event                 @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  products     PromotionProduct[]
+  ticketTypes  PromotionTicketType[]
+}
+
+model PromotionTicketType {
+  promotionId  Int
+  ticketTypeId Int
+  promotion    Promotion  @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+  ticketType   TicketType @relation(fields: [ticketTypeId], references: [id], onDelete: Cascade)
+
+  @@id([promotionId, ticketTypeId])
+}
+
+model PromotionProduct {
+  promotionId Int
+  productId   Int
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  promotion   Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+
+  @@id([promotionId, productId])
+}
+
+model Cart {
+  id          Int          @id @default(autoincrement())
+  status      String       @default("ACTIVE")
+  subtotal    Decimal      @default(0) @db.Decimal(10, 2)
+  discount    Decimal      @default(0) @db.Decimal(10, 2)
+  total       Decimal      @default(0) @db.Decimal(10, 2)
+  userId      Int
+  eventId     Int
+  promotionId Int?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  event       Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  promotion   Promotion?   @relation(fields: [promotionId], references: [id])
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       CartItem[]
+  order       Order?
+  reservation Reservation?
+}
+
+model CartItem {
+  id               Int             @id @default(autoincrement())
+  quantity         Int             @default(1)
+  unitPrice        Decimal         @db.Decimal(10, 2)
+  subtotal         Decimal         @db.Decimal(10, 2)
+  cartId           Int
+  ticketTypeId     Int?
+  productVariantId Int?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  cart             Cart            @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productVariant   ProductVariant? @relation(fields: [productVariantId], references: [id])
+  ticketType       TicketType?     @relation(fields: [ticketTypeId], references: [id])
+
+  @@unique([cartId, ticketTypeId])
+  @@unique([cartId, productVariantId])
+}
+
+model Reservation {
+  id        Int               @id @default(autoincrement())
+  status    String            @default("PENDING")
+  expiresAt DateTime
+  userId    Int
+  eventId   Int
+  cartId    Int               @unique
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  order     Order?
+  cart      Cart              @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  event     Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     ReservationItem[]
+}
+
+model ReservationItem {
+  id               Int      @id @default(autoincrement())
+  quantity         Int      @default(1)
+  reservationId    Int
+  ticketTypeId     Int?
+  productVariantId Int?
+  seatId           Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  reservation    Reservation     @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  ticketType     TicketType?     @relation(fields: [ticketTypeId], references: [id], onDelete: Restrict)
+  productVariant ProductVariant? @relation(fields: [productVariantId], references: [id], onDelete: Restrict)
+  seat           Seat?           @relation(fields: [seatId], references: [id], onDelete: Restrict)
+
+  @@unique([reservationId, seatId])
+}
+
+model Order {
+  id            Int         @id @default(autoincrement())
+  status        String      @default("PENDING")
+  subtotal      Decimal     @db.Decimal(10, 2)
+  discount      Decimal     @db.Decimal(10, 2)
+  total         Decimal     @db.Decimal(10, 2)
+  userId        Int
+  eventId       Int
+  reservationId Int         @unique
+  cartId        Int         @unique
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  cart          Cart        @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  event         Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  reservation   Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items         OrderItem[]
+  payment       Payment?
+  tickets       Ticket[]
+}
+
+model OrderItem {
+  id               Int             @id @default(autoincrement())
+  quantity         Int
+  unitPrice        Decimal         @db.Decimal(10, 2)
+  subtotal         Decimal         @db.Decimal(10, 2)
+  orderId          Int
+  ticketTypeId     Int?
+  productVariantId Int?
+  seatId           Int?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  order            Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productVariant   ProductVariant? @relation(fields: [productVariantId], references: [id])
+  seat             Seat?           @relation(fields: [seatId], references: [id])
+  ticketType       TicketType?     @relation(fields: [ticketTypeId], references: [id])
+  tickets          Ticket[]
+}
+
+model Payment {
+  id            Int       @id @default(autoincrement())
+  amount        Decimal   @db.Decimal(10, 2)
+  method        String
+  status        String    @default("PENDING")
+  transactionId String?   @unique
+  paidAt        DateTime?
+  orderId       Int       @unique
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model Ticket {
+  id           Int         @id @default(autoincrement())
+  code         String      @unique
+  status       String      @default("ACTIVE")
+  issuedAt     DateTime    @default(now())
+  usedAt       DateTime?
+  userId       Int
+  eventId      Int
+  orderId      Int
+  orderItemId  Int
+  ticketTypeId Int?
+  seatId       Int?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  event        Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  order        Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderItem    OrderItem   @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  seat         Seat?       @relation(fields: [seatId], references: [id])
+  ticketType   TicketType? @relation(fields: [ticketTypeId], references: [id])
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

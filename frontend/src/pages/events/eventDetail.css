@@ -1,0 +1,352 @@
+
+.event-detail {
+  width: min(1180px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 28px 0 64px;
+  color: #20202a;
+}
+
+.event-detail-back {
+  display: inline-block;
+  margin-bottom: 24px;
+  color: #6250c8;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.event-detail-back:hover {
+  text-decoration: underline;
+}
+
+.event-detail-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 36px;
+  align-items: center;
+}
+
+.event-detail-cover {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 22px;
+  background: #efedf8;
+}
+
+.event-detail-cover-placeholder {
+  display: grid;
+  place-items: center;
+  color: #7257e8;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+}
+
+.event-detail-hero-content {
+  min-width: 0;
+}
+
+.event-detail-eyebrow {
+  margin: 0 0 10px;
+  color: #7257e8;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.event-detail-hero h1 {
+  margin: 0 0 18px;
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+}
+
+.event-detail-date {
+  font-weight: 700;
+}
+
+.event-detail-date,
+.event-detail-address,
+.event-detail-description {
+  line-height: 1.7;
+}
+
+.event-detail-address {
+  color: #626171;
+}
+
+.event-detail-description {
+  margin-top: 22px;
+  color: #555463;
+  white-space: pre-line;
+}
+
+.event-detail-buy {
+  margin-top: 18px;
+  min-height: 48px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 12px;
+  background: #7257e8;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+.event-detail-buy:hover:not(:disabled) {
+  background: #6045d3;
+  transform: translateY(-1px);
+}
+
+.event-detail-buy:disabled {
+  background: #b8b5c7;
+  cursor: not-allowed;
+}
+
+.event-detail-availability {
+  margin-top: 52px;
+  padding: 32px;
+  border: 1px solid #e9e7f0;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 12px 36px rgb(29 22 61 / 5%);
+}
+
+.event-detail-section-heading {
+  margin-bottom: 28px;
+}
+
+.event-detail-section-heading h2 {
+  margin: 0;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+}
+
+.event-detail-availability-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.75fr) minmax(0, 1.5fr);
+  gap: 28px;
+  align-items: stretch;
+}
+
+.event-detail-occupancy-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 18px;
+  border: 1px solid #efedf5;
+  border-radius: 18px;
+  background: #faf9fd;
+  text-align: center;
+}
+
+.event-occupancy-ring {
+  display: grid;
+  width: 190px;
+  height: 190px;
+  place-items: center;
+  border-radius: 50%;
+  transform: rotate(0deg);
+}
+
+.event-occupancy-ring-center {
+  display: flex;
+  width: 148px;
+  height: 148px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.event-occupancy-ring-center strong {
+  color: #29233f;
+  font-size: 2.5rem;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.event-occupancy-ring-center span {
+  margin-top: 6px;
+  color: #777487;
+  font-size: 0.9rem;
+}
+
+.event-detail-occupancy-card h3 {
+  margin: 22px 0 8px;
+  font-size: 1.05rem;
+}
+
+.event-detail-occupancy-card p {
+  max-width: 280px;
+  margin: 0;
+  color: #777487;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.event-detail-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.event-detail-stat {
+  display: flex;
+  min-height: 145px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 22px;
+  border: 1px solid #e9e7f0;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.event-detail-stat-label {
+  color: #777487;
+  font-size: 0.9rem;
+}
+
+.event-detail-stat strong {
+  margin: 12px 0 7px;
+  color: #29233f;
+  font-size: clamp(1.7rem, 3vw, 2.2rem);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.event-detail-stat-caption {
+  color: #9290a0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.event-detail-stat-available {
+  border-color: #dcd5ff;
+  background: #f8f6ff;
+}
+
+.event-detail-stat-available strong {
+  color: #6045d3;
+}
+
+.event-detail-zones {
+  margin-top: 36px;
+}
+
+.event-detail-zones > h3 {
+  margin: 0 0 16px;
+  font-size: 1.2rem;
+}
+
+.event-detail-zone-list {
+  display: grid;
+  gap: 12px;
+}
+
+.event-detail-zone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border: 1px solid #e9e7f0;
+  border-radius: 14px;
+}
+
+.event-detail-zone h4 {
+  margin: 0 0 5px;
+}
+
+.event-detail-zone p {
+  margin: 0;
+  color: #777487;
+  font-size: 0.9rem;
+}
+
+.event-detail-zone-status {
+  flex-shrink: 0;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #eaf7ef;
+  color: #237044;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.event-detail-zone-status-low_availability {
+  background: #fff3d9;
+  color: #8a5a00;
+}
+
+.event-detail-zone-status-sold_out {
+  background: #fdebec;
+  color: #a52d39;
+}
+
+.event-detail-state {
+  padding-top: 64px;
+  padding-bottom: 64px;
+}
+
+.event-detail-state a {
+  color: #6250c8;
+}
+
+@media (max-width: 800px) {
+  .event-detail-hero {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .event-detail-cover {
+    aspect-ratio: 16 / 10;
+  }
+
+  .event-detail-availability {
+    padding: 22px;
+  }
+
+  .event-detail-availability-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .event-detail-occupancy-card {
+    padding: 24px 16px;
+  }
+}
+
+@media (max-width: 520px) {
+  .event-detail {
+    width: min(100% - 24px, 1180px);
+    padding-top: 18px;
+  }
+
+  .event-detail-availability {
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .event-detail-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .event-detail-stat {
+    min-height: 120px;
+  }
+
+  .event-detail-zone {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .event-detail-buy {
+    width: 100%;
+  }
+}

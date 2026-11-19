@@ -1,0 +1,16 @@
+﻿# Dependencias y compilados
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Variables de entorno sensibles
+.env
+.env.*
+
+# Cobertura temporal (ya se copia limpia a qa-reports/02-unit-tests/coverage-report)
+backend/coverage/
+
+# Sistema y logs
+.DS_Store
+Thumbs.db
+*.log

@@ -1,0 +1,43 @@
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+} from '@nestjs/common';
+
+import { EventTemplatesService } from './event-templates.service';
+import { CreateEventTemplateDto } from './dto/create-event-template.dto';
+import { UpdateEventTemplateDto } from './dto/update-event-template.dto';
+
+@Controller('event-templates')
+export class EventTemplatesController {
+  constructor(
+    private readonly eventTemplatesService: EventTemplatesService,
+  ) { }
+
+  @Post()
+  create(@Body() createEventTemplateDto: CreateEventTemplateDto) {
+    return this.eventTemplatesService.create(createEventTemplateDto);
+  }
+
+  @Get()
+  findAll() {
+    return this.eventTemplatesService.findAll();
+  }
+
+  @Get(':id')
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.eventTemplatesService.findOne(id);
+  }
+
+  @Patch(':id')
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateEventTemplateDto: UpdateEventTemplateDto,
+  ) {
+    return this.eventTemplatesService.update(id, updateEventTemplateDto);
+  }
+}
