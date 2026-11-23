@@ -14,10 +14,22 @@ enum UserRole {
   ADMIN
 }
 
-enum PromoterApplicationStatus {
+enum ApplicationStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum PersonType {
+  NATURAL
+  JURIDICAL
+}
+
+enum IdentificationType {
+  CC
+  CE
+  PASAPORTE
+  NIT
 }
 
 model User {
@@ -25,12 +37,38 @@ model User {
   name                String
   email               String               @unique
   passwordHash        String
+  role                UserRole             @default(USER)
+
+  // Datos personales básicos (Comprador y perfil general)
+  phone               String?              @db.VarChar(30)
+  documentType        IdentificationType?
+  documentNumber      String?              @db.VarChar(30)
+  city                String?              @db.VarChar(80)
+  avatarUrl           String?              @db.Text
+
+  // Sello de Verificación Oficial EVENTIA (Chulo azul tras aprobación)
+  isVerified          Boolean              @default(false)
+  verifiedAt          DateTime?
+  verificationBadge   String?              @db.VarChar(40) // "VERIFIED_PROMOTER" | "VERIFIED_MODERATOR" | "VERIFIED_USER"
+
+  // Perfil Público de Productora (se llena al aprobarse como Promotor)
+  brandName           String?              @db.VarChar(120)
+  bio                 String?              @db.VarChar(300)
+  supportEmail        String?              @db.VarChar(120)
+  supportPhone        String?              @db.VarChar(30)
+  instagramUrl        String?              @db.VarChar(200)
+  tiktokUrl           String?              @db.VarChar(200)
+  facebookUrl         String?              @db.VarChar(200)
+  websiteUrl          String?              @db.VarChar(200)
+
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
-  role                UserRole             @default(USER)
+
   promoterApplication PromoterApplication?
+  assignedApplication PromoterApplication? @relation("ModeratorApplicationAssignment")
+  assignedEvent       Event?               @relation("ModeratorEventAssignment")
   carts               Cart[]
-  events              Event[]
+  events              Event[]              @relation("EventOrganizer")
   orders              Order[]
   refreshTokens       RefreshToken[]
   reservations        Reservation[]
@@ -38,54 +76,133 @@ model User {
 }
 
 model PromoterApplication {
-  id             Int                       @id @default(autoincrement())
-  businessName   String                    @db.VarChar(120)
-  documentNumber String                    @db.VarChar(30)
-  phone          String                    @db.VarChar(30)
-  description    String                    @db.Text
-  status         PromoterApplicationStatus @default(PENDING)
-  createdAt      DateTime                  @default(now())
-  updatedAt      DateTime                  @updatedAt
-  reviewedAt     DateTime?
+  id                    Int                @id @default(autoincrement())
+  personType            PersonType         @default(NATURAL)
+  kycStepCompleted      Int                @default(1) // 1: Registro Express, 2: KYC Completo
 
-  userId Int  @unique
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Fase 1: Registro Inicial Express
+  businessName          String             @db.VarChar(120)
+  phone                 String             @db.VarChar(30)
+  acceptedTermsAt       DateTime           @default(now())
+
+  // Fase 2A: Persona Natural
+  firstName             String?            @db.VarChar(80)
+  lastName              String?            @db.VarChar(80)
+  documentType          IdentificationType @default(CC)
+  documentNumber        String             @db.VarChar(30)
+  nitVerificationDigit  String?            @db.VarChar(2)
+  documentIssueDate     DateTime?
+  birthDate             DateTime?
+
+  // Ubicación Fiscal / Residencia (Colombia)
+  department            String?            @db.VarChar(80)
+  city                  String?            @db.VarChar(80)
+  address               String?            @db.VarChar(200)
+
+  // Fase 2B: Persona Jurídica (Representante Legal)
+  repLegalFirstName     String?            @db.VarChar(80)
+  repLegalLastName      String?            @db.VarChar(80)
+  repLegalDocType       IdentificationType?
+  repLegalDocNumber     String?            @db.VarChar(30)
+  repLegalDocIssueDate  DateTime?
+
+  // Soportes Documentales (PDFs + Logo + Firma Digital)
+  identityDocPdfUrl     String?            @db.Text // Cédula frontal titular o rep. legal (PDF)
+  rutPdfUrl             String?            @db.Text // RUT actualizado (PDF)
+  chamberCommercePdfUrl String?            @db.Text // Cámara de Comercio <= 30 días (PDF, Jurídica)
+  logoUrl               String?            @db.Text // Logo productora (PNG/JPG/WEBP)
+  digitalSignatureUrl   String?            @db.Text // Firma manuscrita digitalizada (PNG)
+
+  // Perfil Público y Atención al Cliente
+  description           String             @db.Text
+  supportEmail          String?            @db.VarChar(120)
+  supportPhone          String?            @db.VarChar(30)
+  instagramUrl          String?            @db.VarChar(200)
+  tiktokUrl             String?            @db.VarChar(200)
+  facebookUrl           String?            @db.VarChar(200)
+  websiteUrl            String?            @db.VarChar(200)
+
+  rejectionReason       String?            @db.Text
+  status                ApplicationStatus  @default(PENDING)
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  reviewedAt            DateTime?
+
+  userId                Int                @unique
+  user                  User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moderatorId           Int?               @unique
+  moderator             User?              @relation("ModeratorApplicationAssignment", fields: [moderatorId], references: [id], onDelete: SetNull)
+}
+
+model ModeratorApplication {
+  id                    Int                @id @default(autoincrement())
+
+  // Datos Personales y Residencia
+  firstName             String             @db.VarChar(80)
+  lastName              String             @db.VarChar(80)
+  email                 String             @unique
+  phone                 String             @db.VarChar(30)
+  documentType          IdentificationType @default(CC)
+  documentNumber        String             @db.VarChar(30)
+  birthDate             DateTime?
+  department            String?            @db.VarChar(80)
+  city                  String?            @db.VarChar(80)
+  address               String?            @db.VarChar(200)
+
+  // Trayectoria en Eventos y Soportes Documentales (3 archivos + Firma NDA)
+  yearsExperience       Int                @default(0)
+  previousEventsSummary String             @db.Text
+  photoUrl              String?            @db.Text // Foto de perfil del moderador (JPG/PNG/WEBP)
+  identityDocPdfUrl     String?            @db.Text // Cédula frontal en PDF
+  experienceCertPdfUrl  String?            @db.Text // Certificado laboral / Hoja de vida en eventos (PDF)
+  digitalSignatureUrl   String?            @db.Text // Firma acuerdo de confidencialidad (PNG)
+
+  acceptedNdaAt         DateTime           @default(now())
+  rejectionReason       String?            @db.Text
+  status                ApplicationStatus  @default(PENDING)
+  reviewedAt            DateTime?
+  reviewedById          Int?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
 }
 
 model Event {
-  id            Int                 @id @default(autoincrement())
-  name          String
-  description   String?
-  capacity      Int
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
-  organizerId   Int
-  templateId    Int
-  address       String?
-  city          String
-  coverImageUrl String?
-  endAt         DateTime
-  latitude      Decimal?            @db.Decimal(10, 7)
-  longitude     Decimal?            @db.Decimal(10, 7)
-  slug          String              @unique
-  startAt       DateTime
-  status        String              @default("DRAFT")
-  venue         String
-  categoryId    Int
-  category      EventCategory       @relation(fields: [categoryId], references: [id])
-  carts         Cart[]
-  organizer     User                @relation(fields: [organizerId], references: [id])
-  template      EventTemplate       @relation(fields: [templateId], references: [id])
-  configuration EventConfiguration?
-  images        EventImage[]
-  orders        Order[]
-  products      Product[]
-  promotions    Promotion[]
-  reservations  Reservation[]
-  seats         Seat[]
-  tickets       Ticket[]
-  ticketTypes   TicketType[]
-  zones         Zone[]
+  id              Int                 @id @default(autoincrement())
+  name            String
+  description     String?
+  capacity        Int
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  organizerId     Int
+  moderatorId     Int?                @unique
+  rejectionReason String?             @db.Text
+  templateId      Int
+  address         String?
+  city            String
+  coverImageUrl   String?
+  endAt           DateTime
+  latitude        Decimal?            @db.Decimal(10, 7)
+  longitude       Decimal?            @db.Decimal(10, 7)
+  slug            String              @unique
+  startAt         DateTime
+  status          String              @default("DRAFT")
+  venue           String
+  categoryId      Int
+  category        EventCategory       @relation(fields: [categoryId], references: [id])
+  carts           Cart[]
+  organizer       User                @relation("EventOrganizer", fields: [organizerId], references: [id])
+  moderator       User?               @relation("ModeratorEventAssignment", fields: [moderatorId], references: [id], onDelete: SetNull)
+  template        EventTemplate       @relation(fields: [templateId], references: [id])
+  configuration   EventConfiguration?
+  images          EventImage[]
+  orders          Order[]
+  products        Product[]
+  promotions      Promotion[]
+  reservations    Reservation[]
+  seats           Seat[]
+  tickets         Ticket[]
+  ticketTypes     TicketType[]
+  zones           Zone[]
 }
 
 model EventCategory {

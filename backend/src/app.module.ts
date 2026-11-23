@@ -22,6 +22,8 @@ import { TicketsModule } from './tickets/tickets.module';
 import { ProductOptionsModule } from './product-options/product-options.module';
 import { EventAvailabilityModule } from './event-availability/event-availability.module';
 import { PromoterApplicationsModule } from './promoter-applications/promoter-applications.module';
+import { ModeratorApplicationsModule } from './moderator-applications/moderator-applications.module';
+import { UploadsModule } from './uploads/uploads.module';
 
 @Module({
   imports: [
@@ -50,6 +52,8 @@ import { PromoterApplicationsModule } from './promoter-applications/promoter-app
     ProductOptionsModule,
     EventAvailabilityModule,
     PromoterApplicationsModule,
+    ModeratorApplicationsModule,
+    UploadsModule,
   ],
 })
 export class AppModule {}

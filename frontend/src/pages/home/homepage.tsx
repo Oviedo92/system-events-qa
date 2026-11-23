@@ -522,10 +522,24 @@ export default function HomePage() {
                                 eventos desde un mismo lugar.
                             </p>
 
-                            <a className="button button-coral" href="#contacto">
-                                Conoce EVENTIA
-                                <ArrowRight size={18} />
-                            </a>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+                                <Link
+                                    className="button button-coral"
+                                    data-testid="home-btn-apply-promoter"
+                                    to="/promoter/application"
+                                >
+                                    Postularme como Promotor
+                                    <ArrowRight size={18} />
+                                </Link>
+
+                                <Link
+                                    className="button button-outline"
+                                    data-testid="home-btn-apply-moderator"
+                                    to="/moderator/application"
+                                >
+                                    Trabaja con nosotros (Moderador)
+                                </Link>
+                            </div>
                         </div>
 
                         <div className="organizer-visual" aria-hidden="true">

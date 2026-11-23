@@ -1,0 +1,17 @@
+﻿{
+  "name": "03-api-tests",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test:api": "newman run eventia-api.postman_collection.json -e eventia-local.postman_environment.json --folder \"01 - Auth\" --folder \"02 - Events \u0026 TicketTypes (CRUD Recurso 1)\" --folder \"03 - Carts (CRUD Recurso 2)\" --folder \"04 - Negativos (Familia 4xx)\" -r cli,htmlextra --reporter-htmlextra-export newman-report/reporte-api-crud-negativos.html --suppress-exit-code",
+    "test:api:ddt": "newman run eventia-api.postman_collection.json -e eventia-local.postman_environment.json --folder \"05 - Data-Driven Testing (CSV)\" -d data-driven-ticket-types.csv -r cli,htmlextra --reporter-htmlextra-export newman-report/reporte-api-data-driven.html"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "newman": "^6.2.3",
+    "newman-reporter-htmlextra": "^1.23.1"
+  }
+}

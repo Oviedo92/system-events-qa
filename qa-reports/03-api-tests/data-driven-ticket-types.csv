@@ -1,0 +1,7 @@
+﻿name,description,price,quantity,expectedStatus
+VIP Primera Fila,Acceso preferencial frente al escenario,150000,50,201
+General Etapa 1,Acceso general preventivo,60000,200,201
+Palco Oriental,Mesa reservada para 10 personas,850000,10,201
+Cortesia Prensa,Acceso acreditado medios,0,25,201
+,Nombre vacio debe fallar validacion,50000,10,400
+Entrada Precio Negativo,Precio menor a cero invalido,-1000,10,400

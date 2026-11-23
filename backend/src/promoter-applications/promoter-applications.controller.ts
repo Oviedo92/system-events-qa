@@ -1,6 +1,10 @@
 import {
   Body,
   Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
   Post,
   Req,
   UseGuards,
@@ -27,13 +31,53 @@ export class PromoterApplicationsController {
   ) {}
 
   @Post()
-  create(
+  createOrUpdate(
     @Req() req: AuthenticatedRequest,
     @Body() dto: CreatePromoterApplicationDto,
   ) {
-    return this.promoterApplicationsService.create(
+    return this.promoterApplicationsService.upsertApplication(req.user.userId, dto);
+  }
+
+  @Get('me')
+  findMine(@Req() req: AuthenticatedRequest) {
+    return this.promoterApplicationsService.findMine(req.user.userId);
+  }
+
+  @Get()
+  findAll(@Req() req: AuthenticatedRequest) {
+    return this.promoterApplicationsService.findAllForAdmin(req.user.role);
+  }
+
+  @Get('my-assignment')
+  findMyAssigned(@Req() req: AuthenticatedRequest) {
+    return this.promoterApplicationsService.findMyAssigned(req.user.userId);
+  }
+
+  @Patch(':id/assign-moderator')
+  assignModerator(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('moderatorId', ParseIntPipe) moderatorId: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.promoterApplicationsService.assignModerator(
+      id,
+      moderatorId,
+      req.user.role,
+    );
+  }
+
+  @Patch(':id/review')
+  review(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { decision: 'APPROVE' | 'REJECT'; rejectionReason?: string },
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.promoterApplicationsService.review(
+      id,
       req.user.userId,
-      dto,
+      req.user.role,
+      body.decision,
+      body.rejectionReason,
     );
   }
 }

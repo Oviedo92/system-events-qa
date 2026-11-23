@@ -1,0 +1,999 @@
+﻿{
+  "info": {
+    "_postman_id": "a1b2c3d4-eventia-qa-v21-2026",
+    "name": "Eventia API QA - RAA3 (Postman \u0026 Newman)",
+    "description": "Colección automatizada v2.1 con autenticación JWT, CRUD encadenado en 2 recursos, 4 validaciones de JSON Schema, 5 pruebas negativas 4xx y soporte Data-Driven.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Pre-request Script global: adjunta el Bearer Token automáticamente si existe y no se omitió",
+          "const skipAuth = pm.request.headers.has(\u0027X-Skip-Auth\u0027);",
+          "if (skipAuth) {",
+          "    pm.request.headers.remove(\u0027X-Skip-Auth\u0027);",
+          "} else {",
+          "    const token = pm.environment.get(\u0027authToken\u0027);",
+          "    if (token) {",
+          "        pm.request.headers.upsert({ key: \u0027Authorization\u0027, value: \u0027Bearer \u0027 + token });",
+          "    }",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Umbral SLA de rendimiento Entregable 6: \u003c 500ms consultas (GET), \u003c 1000ms escrituras (POST/PATCH/DELETE)",
+          "const httpMethod = pm.request.method.toUpperCase();",
+          "const slaLimitMs = httpMethod === \"GET\" ? 500 : 1000;",
+          "pm.test(\"[SLA Rendimiento] \" + httpMethod + \" responde en menos de \" + slaLimitMs + \" ms (actual: \" + pm.response.responseTime + \" ms)\", function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(slaLimitMs);",
+          "});"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Auth",
+      "item": [
+        {
+          "name": "01.1 Register QA User (Dynamic)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const uniqueEmail = `qa.eventia.${Date.now()}@test.com`;",
+                  "pm.environment.set(\u0027userEmail\u0027, uniqueEmail);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\u0027Status code es 201 Created\u0027, () =\u003e pm.response.to.have.status(201));",
+                  "pm.test(\u0027Content-Type es application/json\u0027, () =\u003e pm.expect(pm.response.headers.get(\u0027Content-Type\u0027)).to.include(\u0027application/json\u0027));",
+                  "pm.test(\u0027Tiempo de respuesta menor a 2000ms\u0027, () =\u003e pm.expect(pm.response.responseTime).to.be.below(2000));",
+                  "const json = pm.response.json();",
+                  "pm.test(\u0027Body contiene el email registrado\u0027, () =\u003e {",
+                  "    const userObj = json.user || json;",
+                  "    pm.expect(userObj.email).to.eql(pm.environment.get(\u0027userEmail\u0027));",
+                  "    if (userObj.id) pm.environment.set(\u0027userId\u0027, userObj.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"QA Tester Eventia\",\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "name": "01.2 Login \u0026 Save JWT Token [Schema #1]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\u0027Status code es 200 OK\u0027, () =\u003e pm.response.to.have.status(200));",
+                  "pm.test(\u0027Content-Type es application/json\u0027, () =\u003e pm.expect(pm.response.headers.get(\u0027Content-Type\u0027)).to.include(\u0027application/json\u0027));",
+                  "pm.test(\u0027Tiempo de respuesta menor a 2000ms\u0027, () =\u003e pm.expect(pm.response.responseTime).to.be.below(2000));",
+                  "const json = pm.response.json();",
+                  "const token = json.accessToken || json.access_token;",
+                  "pm.test(\u0027Body contiene accessToken JWT válido y guarda variables\u0027, () =\u003e {",
+                  "    pm.expect(token).to.be.a(\u0027string\u0027).and.not.be.empty;",
+                  "    pm.environment.set(\u0027authToken\u0027, token);",
+                  "    if (json.user \u0026\u0026 json.user.id) pm.environment.set(\u0027userId\u0027, json.user.id);",
+                  "});",
+                  "const loginSchema = {",
+                  "    type: \u0027object\u0027,",
+                  "    required: [\u0027user\u0027],",
+                  "    properties: {",
+                  "        accessToken: { type: \u0027string\u0027 },",
+                  "        access_token: { type: \u0027string\u0027 },",
+                  "        user: {",
+                  "            type: \u0027object\u0027,",
+                  "            required: [\u0027id\u0027, \u0027email\u0027],",
+                  "            properties: {",
+                  "                id: { type: \u0027number\u0027 },",
+                  "                email: { type: \u0027string\u0027 }",
+                  "            }",
+                  "        }",
+                  "    }",
+                  "};",
+                  "pm.test(\u0027JSON Schema #1: Contrato de respuesta Login válido\u0027, () =\u003e {",
+                  "    pm.response.to.have.jsonSchema(loginSchema);",
+                  "});",
+                  "pm.environment.set(\u0027buyerToken\u0027, token);",
+                  "pm.environment.set(\"buyerToken\", token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Events \u0026 TicketTypes (CRUD Recurso 1)",
+      "item": [
+        {
+          "name": "02.1 Create Event (POST) [Schema #2]",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Concierto QA Automation 2027\",\n  \"description\": \"Evento creado desde suite automatizada Postman\",\n  \"startAt\": \"2027-10-15T20:00:00-05:00\",\n  \"endAt\": \"2027-10-16T02:00:00-05:00\",\n  \"venue\": \"Parque de la Leyenda\",\n  \"address\": \"Avenida Hurtado\",\n  \"city\": \"Valledupar\",\n  \"capacity\": 500,\n  \"templateId\": 3,\n  \"categoryId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\u0027Status code es 201 Created\u0027, () =\u003e pm.response.to.have.status(201));",
+                  "pm.test(\u0027Content-Type es application/json\u0027, () =\u003e pm.expect(pm.response.headers.get(\u0027Content-Type\u0027)).to.include(\u0027application/json\u0027));",
+                  "pm.test(\u0027Tiempo de respuesta menor a 2000ms\u0027, () =\u003e pm.expect(pm.response.responseTime).to.be.below(2000));",
+                  "const json = pm.response.json();",
+                  "pm.test(\u0027Body contiene id y slug del evento creado\u0027, () =\u003e {",
+                  "    pm.expect(json.id).to.be.a(\u0027number\u0027);",
+                  "    pm.expect(json.slug).to.be.a(\u0027string\u0027);",
+                  "    pm.environment.set(\u0027eventId\u0027, json.id);",
+                  "    pm.environment.set(\u0027eventSlug\u0027, json.slug);",
+                  "});",
+                  "const eventSchema = {",
+                  "    type: \u0027object\u0027,",
+                  "    required: [\u0027id\u0027, \u0027name\u0027, \u0027slug\u0027, \u0027city\u0027, \u0027capacity\u0027],",
+                  "    properties: {",
+                  "        id: { type: \u0027number\u0027 },",
+                  "        name: { type: \u0027string\u0027 },",
+                  "        slug: { type: \u0027string\u0027 },",
+                  "        city: { type: \u0027string\u0027 },",
+                  "        capacity: { type: \u0027number\u0027 }",
+                  "    }",
+                  "};",
+                  "pm.test(\u0027JSON Schema #2: Contrato de creación de Evento válido\u0027, () =\u003e {",
+                  "    pm.response.to.have.jsonSchema(eventSchema);",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.sendRequest({",
+                  "    url: pm.environment.get(\"baseUrl\") + \"/auth/login\",",
+                  "    method: \"POST\",",
+                  "    header: { \"Content-Type\": \"application/json\" },",
+                  "    body: { mode: \"raw\", raw: JSON.stringify({ email: \"admin@eventia.local\", password: \"Ev!Admin_2026#Local\" }) }",
+                  "}, function (err, res) {",
+                  "    if (!err \u0026\u0026 res) {",
+                  "        const data = res.json();",
+                  "        const admTok = data.accessToken || data.access_token;",
+                  "        if (admTok) {",
+                  "            pm.environment.set(\"authToken\", admTok);",
+                  "            pm.request.headers.upsert({ key: \"Authorization\", value: \"Bearer \" + admTok });",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02.2 Get Event by Slug (GET)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\u0027Status code es 200 OK\u0027, () =\u003e pm.response.to.have.status(200));",
+                  "pm.test(\u0027Content-Type es application/json\u0027, () =\u003e pm.expect(pm.response.headers.get(\u0027Content-Type\u0027)).to.include(\u0027application/json\u0027));",
+                  "pm.test(\u0027Tiempo de respuesta menor a 2000ms\u0027, () =\u003e pm.expect(pm.response.responseTime).to.be.below(2000));",
+                  "const json = pm.response.json();",
+                  "pm.test(\u0027Body coincide con el slug encadenado\u0027, () =\u003e {",
+                  "    pm.expect(json.slug).to.eql(pm.environment.get(\u0027eventSlug\u0027));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/events/slug/{{eventSlug}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events",
+                "slug",
+                "{{eventSlug}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "02.3 Update Event (PATCH)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\u0027Status code es 200 OK\u0027, () =\u003e pm.response.to.have.status(200));",
+                  "pm.test(\u0027Content-Type es application/json\u0027, () =\u003e pm.expect(pm.response.headers.get(\u0027Content-Type\u0027)).to.include(\u0027application/json\u0027));",
+                  "pm.test(\u0027Tiempo de respuesta menor a 2000ms\u0027, () =\u003e pm.expect(pm.response.responseTime).to.be.below(2000));",
+                  "const json = pm.response.json();",
+                  "pm.test(\u0027Body refleja la capacidad actualizada a 750\u0027, () =\u003e {",
+                  "    pm.expect(json.capacity).to.eql(750);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"capacity\": 750\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events/{{eventId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events",
+                "{{eventId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "02.4 Create TicketType - CRUD Create (POST)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\u0027Status code es 201 Created\u0027, () =\u003e pm.response.to.have.status(201));",
+                  "pm.test(\u0027Content-Type es application/json\u0027, () =\u003e pm.expect(pm.response.headers.get(\u0027Content-Type\u0027)).to.include(\u0027application/json\u0027));",
+                  "pm.test(\u0027Tiempo de respuesta menor a 2000ms\u0027, () =\u003e pm.expect(pm.response.responseTime).to.be.below(2000));",
+                  "const json = pm.response.json();",
+                  "pm.test(\u0027Body retorna id del TicketType y lo guarda en entorno\u0027, () =\u003e {",
+                  "    pm.expect(json.id).to.be.a(\u0027number\u0027);",
+                  "    pm.environment.set(\u0027ticketTypeId\u0027, json.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Platino QA\",\n  \"description\": \"Zona preferencial\",\n  \"price\": 120000,\n  \"quantity\": 100\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events/{{eventId}}/ticket-types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events",
+                "{{eventId}}",
+                "ticket-types"
+              ]
+            }
+          }
+        },
+        {
+          "name": "02.5 Get TicketType - CRUD Read (GET) [Schema #3]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\u0027Status code es 200 OK\u0027, () =\u003e pm.response.to.have.status(200));",
+                  "pm.test(\u0027Content-Type es application/json\u0027, () =\u003e pm.expect(pm.response.headers.get(\u0027Content-Type\u0027)).to.include(\u0027application/json\u0027));",
+                  "pm.test(\u0027Tiempo de respuesta menor a 2000ms\u0027, () =\u003e pm.expect(pm.response.responseTime).to.be.below(2000));",
+                  "const json = pm.response.json();",
+                  "pm.test(\u0027Body coincide con el ticketTypeId creado\u0027, () =\u003e {",
+                  "    pm.expect(json.id).to.eql(pm.environment.get(\u0027ticketTypeId\u0027));",
+                  "    pm.expect(json.name).to.eql(\u0027Platino QA\u0027);",
+                  "});",
+                  "const ticketTypeSchema = {",
+                  "    type: \u0027object\u0027,",
+                  "    required: [\u0027id\u0027, \u0027name\u0027, \u0027quantity\u0027],",
+                  "    properties: {",
+                  "        id: { type: \u0027number\u0027 },",
+                  "        name: { type: \u0027string\u0027 },",
+                  "        quantity: { type: \u0027number\u0027 }",
+                  "    }",
+                  "};",
+                  "pm.test(\u0027JSON Schema #3: Contrato de TicketType válido\u0027, () =\u003e {",
+                  "    pm.response.to.have.jsonSchema(ticketTypeSchema);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ticket-types/{{ticketTypeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ticket-types",
+                "{{ticketTypeId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "02.6 Update TicketType - CRUD Update (PATCH)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\u0027Status code es 200 OK\u0027, () =\u003e pm.response.to.have.status(200));",
+                  "pm.test(\u0027Content-Type es application/json\u0027, () =\u003e pm.expect(pm.response.headers.get(\u0027Content-Type\u0027)).to.include(\u0027application/json\u0027));",
+                  "pm.test(\u0027Tiempo de respuesta menor a 2000ms\u0027, () =\u003e pm.expect(pm.response.responseTime).to.be.below(2000));",
+                  "const json = pm.response.json();",
+                  "pm.test(\u0027Body refleja el nombre actualizado\u0027, () =\u003e {",
+                  "    pm.expect(json.name).to.eql(\u0027Platino QA Renovado\u0027);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Platino QA Renovado\",\n  \"quantity\": 80\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ticket-types/{{ticketTypeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ticket-types",
+                "{{ticketTypeId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "02.7 Delete TicketType - CRUD Delete (DELETE)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\u0027Status code es 200 OK\u0027, () =\u003e pm.response.to.have.status(200));",
+                  "pm.test(\u0027Content-Type es application/json\u0027, () =\u003e pm.expect(pm.response.headers.get(\u0027Content-Type\u0027)).to.include(\u0027application/json\u0027));",
+                  "pm.test(\u0027Tiempo de respuesta menor a 2000ms\u0027, () =\u003e pm.expect(pm.response.responseTime).to.be.below(2000));",
+                  "pm.test(\u0027Body confirma eliminación del recurso\u0027, () =\u003e {",
+                  "    pm.expect(pm.response.text()).to.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/ticket-types/{{ticketTypeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ticket-types",
+                "{{ticketTypeId}}"
+              ]
+            }
+          }
+        }
+      ],
+      "event": [
+        null,
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.environment.get(\"adminToken\")) {",
+              "    pm.sendRequest({",
+              "        url: pm.environment.get(\"baseUrl\") + \"/auth/login\",",
+              "        method: \"POST\",",
+              "        header: { \"Content-Type\": \"application/json\" },",
+              "        body: { mode: \"raw\", raw: JSON.stringify({ email: \"admin@eventia.local\", password: \"Ev!Admin_2026#Local\" }) }",
+              "    }, function (err, res) {",
+              "        if (!err \u0026\u0026 res) {",
+              "            const data = res.json();",
+              "            const admTok = data.accessToken || data.access_token;",
+              "            if (admTok) {",
+              "                pm.environment.set(\"adminToken\", admTok);",
+              "                pm.environment.set(\"authToken\", admTok);",
+              "            }",
+              "        }",
+              "    });",
+              "} else {",
+              "    pm.environment.set(\"authToken\", pm.environment.get(\"adminToken\"));",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Carts (CRUD Recurso 2)",
+      "item": [
+        {
+          "name": "03.1 Create Cart - CRUD Create (POST) [Schema #4]",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": {{eventId}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}/cart",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}",
+                "cart"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\u0027Status code es 201 Created\u0027, () =\u003e pm.response.to.have.status(201));",
+                  "pm.test(\u0027Content-Type es application/json\u0027, () =\u003e pm.expect(pm.response.headers.get(\u0027Content-Type\u0027)).to.include(\u0027application/json\u0027));",
+                  "pm.test(\u0027Tiempo de respuesta menor a 2000ms\u0027, () =\u003e pm.expect(pm.response.responseTime).to.be.below(2000));",
+                  "const json = pm.response.json();",
+                  "pm.test(\u0027Body retorna id del carrito y lo guarda en entorno\u0027, () =\u003e {",
+                  "    pm.expect(json.id).to.be.a(\u0027number\u0027);",
+                  "    pm.environment.set(\u0027cartId\u0027, json.id);",
+                  "});",
+                  "const cartSchema = {",
+                  "    type: \u0027object\u0027,",
+                  "    required: [\u0027id\u0027, \u0027userId\u0027, \u0027eventId\u0027],",
+                  "    properties: {",
+                  "        id: { type: \u0027number\u0027 },",
+                  "        userId: { type: \u0027number\u0027 },",
+                  "        eventId: { type: \u0027number\u0027 }",
+                  "    }",
+                  "};",
+                  "pm.test(\u0027JSON Schema #4: Contrato de Carrito válido\u0027, () =\u003e {",
+                  "    pm.response.to.have.jsonSchema(cartSchema);",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const buyerTok = pm.environment.get(\"buyerToken\");",
+                  "if (buyerTok) {",
+                  "    pm.environment.set(\"authToken\", buyerTok);",
+                  "    pm.request.headers.upsert({ key: \"Authorization\", value: \"Bearer \" + buyerTok });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03.2 Get Cart by ID - CRUD Read (GET)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\u0027Status code es 200 OK\u0027, () =\u003e pm.response.to.have.status(200));",
+                  "pm.test(\u0027Content-Type es application/json\u0027, () =\u003e pm.expect(pm.response.headers.get(\u0027Content-Type\u0027)).to.include(\u0027application/json\u0027));",
+                  "pm.test(\u0027Tiempo de respuesta menor a 2000ms\u0027, () =\u003e pm.expect(pm.response.responseTime).to.be.below(2000));",
+                  "const json = pm.response.json();",
+                  "pm.test(\u0027Body corresponde al cartId encadenado\u0027, () =\u003e {",
+                  "    pm.expect(json.id).to.eql(pm.environment.get(\u0027cartId\u0027));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/carts/{{cartId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "carts",
+                "{{cartId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "03.3 Update Cart - CRUD Update (PATCH)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\u0027Status code es 200 OK\u0027, () =\u003e pm.response.to.have.status(200));",
+                  "pm.test(\u0027Content-Type es application/json\u0027, () =\u003e pm.expect(pm.response.headers.get(\u0027Content-Type\u0027)).to.include(\u0027application/json\u0027));",
+                  "pm.test(\u0027Tiempo de respuesta menor a 2000ms\u0027, () =\u003e pm.expect(pm.response.responseTime).to.be.below(2000));",
+                  "const json = pm.response.json();",
+                  "pm.test(\u0027Body mantiene integridad del carrito\u0027, () =\u003e {",
+                  "    pm.expect(json.id).to.eql(pm.environment.get(\u0027cartId\u0027));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/carts/{{cartId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "carts",
+                "{{cartId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "03.4 Delete Cart - CRUD Delete (DELETE)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\u0027Status code es 200 OK\u0027, () =\u003e pm.response.to.have.status(200));",
+                  "pm.test(\u0027Content-Type es application/json\u0027, () =\u003e pm.expect(pm.response.headers.get(\u0027Content-Type\u0027)).to.include(\u0027application/json\u0027));",
+                  "pm.test(\u0027Tiempo de respuesta menor a 2000ms\u0027, () =\u003e pm.expect(pm.response.responseTime).to.be.below(2000));",
+                  "pm.test(\u0027Body confirma eliminación del carrito\u0027, () =\u003e {",
+                  "    pm.expect(pm.response.text()).to.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/carts/{{cartId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "carts",
+                "{{cartId}}"
+              ]
+            }
+          }
+        }
+      ],
+      "event": [
+        null,
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const buyerTok = pm.environment.get(\"buyerToken\");",
+              "if (buyerTok) { pm.environment.set(\"authToken\", buyerTok); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Negativos (Familia 4xx)",
+      "item": [
+        {
+          "name": "04.1 [400 Bad Request] Create Event con payload inválido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\u0027Status code es 400 Bad Request\u0027, () =\u003e pm.response.to.have.status(400));",
+                  "pm.test(\u0027Content-Type es application/json\u0027, () =\u003e pm.expect(pm.response.headers.get(\u0027Content-Type\u0027)).to.include(\u0027application/json\u0027));",
+                  "pm.test(\u0027Tiempo de respuesta menor a 2000ms\u0027, () =\u003e pm.expect(pm.response.responseTime).to.be.below(2000));",
+                  "const json = pm.response.json();",
+                  "pm.test(\u0027Body reporta errores de validación DTO\u0027, () =\u003e {",
+                  "    pm.expect(json.statusCode).to.eql(400);",
+                  "    pm.expect(json.message).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"\",\n  \"capacity\": -5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events"
+              ]
+            }
+          }
+        },
+        {
+          "name": "04.2 [401 Unauthorized] Consultar carrito sin token JWT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\u0027Status code es 401 Unauthorized\u0027, () =\u003e pm.response.to.have.status(401));",
+                  "pm.test(\u0027Content-Type es application/json\u0027, () =\u003e pm.expect(pm.response.headers.get(\u0027Content-Type\u0027)).to.include(\u0027application/json\u0027));",
+                  "pm.test(\u0027Tiempo de respuesta menor a 2000ms\u0027, () =\u003e pm.expect(pm.response.responseTime).to.be.below(2000));",
+                  "const json = pm.response.json();",
+                  "pm.test(\u0027Body indica falta de autorización\u0027, () =\u003e {",
+                  "    pm.expect(json.statusCode).to.eql(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Skip-Auth",
+                "value": "true"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/1/cart",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "1",
+                "cart"
+              ]
+            }
+          }
+        },
+        {
+          "name": "04.3 [403 Forbidden] Acceder al carrito de otro usuario",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\u0027Status code es 403 Forbidden\u0027, () =\u003e pm.response.to.have.status(403));",
+                  "pm.test(\u0027Content-Type es application/json\u0027, () =\u003e pm.expect(pm.response.headers.get(\u0027Content-Type\u0027)).to.include(\u0027application/json\u0027));",
+                  "pm.test(\u0027Tiempo de respuesta menor a 2000ms\u0027, () =\u003e pm.expect(pm.response.responseTime).to.be.below(2000));",
+                  "const json = pm.response.json();",
+                  "pm.test(\u0027Body deniega acceso a recurso ajeno\u0027, () =\u003e {",
+                  "    pm.expect(json.statusCode).to.eql(403);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/users/999999/cart",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "999999",
+                "cart"
+              ]
+            }
+          }
+        },
+        {
+          "name": "04.4 [404 Not Found] Consultar evento inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\u0027Status code es 404 Not Found\u0027, () =\u003e pm.response.to.have.status(404));",
+                  "pm.test(\u0027Content-Type es application/json\u0027, () =\u003e pm.expect(pm.response.headers.get(\u0027Content-Type\u0027)).to.include(\u0027application/json\u0027));",
+                  "pm.test(\u0027Tiempo de respuesta menor a 2000ms\u0027, () =\u003e pm.expect(pm.response.responseTime).to.be.below(2000));",
+                  "const json = pm.response.json();",
+                  "pm.test(\u0027Body confirma recurso no encontrado\u0027, () =\u003e {",
+                  "    pm.expect(json.statusCode).to.eql(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/events/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events",
+                "999999"
+              ]
+            }
+          }
+        },
+        {
+          "name": "04.5 [409 Conflict] Registrar email ya existente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\u0027Status code es 409 Conflict (o 400)\u0027, () =\u003e pm.expect(pm.response.code).to.be.oneOf([400, 409]));",
+                  "pm.test(\u0027Content-Type es application/json\u0027, () =\u003e pm.expect(pm.response.headers.get(\u0027Content-Type\u0027)).to.include(\u0027application/json\u0027));",
+                  "pm.test(\u0027Tiempo de respuesta menor a 2000ms\u0027, () =\u003e pm.expect(pm.response.responseTime).to.be.below(2000));",
+                  "const json = pm.response.json();",
+                  "pm.test(\u0027Body indica conflicto por email duplicado\u0027, () =\u003e {",
+                  "    pm.expect(json.message).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Usuario Duplicado\",\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Data-Driven Testing (CSV)",
+      "item": [
+        {
+          "name": "05.1 Create TicketType from CSV Dataset",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Si se ejecuta fuera de runner sin CSV, usa valores por defecto",
+                  "if (!pm.iterationData.has(\u0027expectedStatus\u0027)) {",
+                  "    pm.variables.set(\u0027name\u0027, \u0027Entrada General CSV Fallback\u0027);",
+                  "    pm.variables.set(\u0027description\u0027, \u0027Prueba unitaria sin iteracion CSV\u0027);",
+                  "    pm.variables.set(\u0027price\u0027, 50000);",
+                  "    pm.variables.set(\u0027quantity\u0027, 100);",
+                  "}",
+                  "if (!pm.environment.get(\u0027eventId\u0027)) {",
+                  "    pm.environment.set(\u0027eventId\u0027, 1);",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const expectedStatus = Number(pm.iterationData.get(\u0027expectedStatus\u0027) || 201);",
+                  "pm.test(`Status code coincide con CSV esperado (${expectedStatus})`, () =\u003e {",
+                  "    pm.response.to.have.status(expectedStatus);",
+                  "});",
+                  "pm.test(\u0027Content-Type es application/json\u0027, () =\u003e pm.expect(pm.response.headers.get(\u0027Content-Type\u0027)).to.include(\u0027application/json\u0027));",
+                  "pm.test(\u0027Tiempo de respuesta menor a 2000ms\u0027, () =\u003e pm.expect(pm.response.responseTime).to.be.below(2000));",
+                  "const json = pm.response.json();",
+                  "pm.test(\u0027Body valida resultado según caso CSV\u0027, () =\u003e {",
+                  "    if (expectedStatus === 201) {",
+                  "        pm.expect(json.id).to.be.a(\u0027number\u0027);",
+                  "    } else {",
+                  "        pm.expect(json.message).to.exist;",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{name}}\",\n  \"description\": \"{{description}}\",\n  \"price\": {{price}},\n  \"quantity\": {{quantity}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events/{{eventId}}/ticket-types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events",
+                "{{eventId}}",
+                "ticket-types"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

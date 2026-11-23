@@ -12,7 +12,7 @@
 
 .events-eyebrow {
   margin: 0 0 8px;
-  color: #e65b48;
+  color: #c23627;
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.12em;
@@ -76,7 +76,7 @@
 
 .events-filter-field input:focus,
 .events-filter-field select:focus {
-  border-color: #e65b48;
+  border-color: #c23627;
   box-shadow: 0 0 0 3px rgb(230 91 72 / 10%);
 }
 
@@ -98,7 +98,7 @@
 .events-filter-reset:hover,
 .events-page-empty button:hover,
 .events-page-error button:hover {
-  border-color: #e65b48;
+  border-color: #c23627;
   background: #fff5f2;
 }
 
@@ -118,7 +118,7 @@
 }
 
 .events-results-count {
-  color: #72747c;
+  color: #595b6d;
   font-size: 0.82rem;
 }
 
@@ -234,7 +234,7 @@
   height: 15px;
   flex-shrink: 0;
   margin-top: 1px;
-  color: #e65b48;
+  color: #c23627;
 }
 
 /* Precio y botón */
@@ -251,7 +251,7 @@
 .event-card-price-label {
   display: block;
   margin-bottom: 3px;
-  color: #777982;
+  color: #595b6d;
   font-size: 0.7rem;
 }
 
@@ -267,7 +267,7 @@
   padding: 0 10px;
   border: 0;
   border-radius: 8px;
-  background: #e65b48;
+  background: #c23627;
   color: #fff;
   font: inherit;
   font-size: 0.78rem;
@@ -282,7 +282,7 @@
 
 .event-card-button:disabled {
   background: #e5e5e9;
-  color: #777982;
+  color: #595b6d;
   cursor: not-allowed;
 }
 
@@ -358,13 +358,13 @@
 }
 
 .catalog-pagination button:hover:not(:disabled):not(.active) {
-  border-color: #e65b48;
+  border-color: #c23627;
   color: #c94332;
 }
 
 .catalog-pagination button.active {
-  border-color: #e65b48;
-  background: #e65b48;
+  border-color: #c23627;
+  background: #c23627;
   color: #fff;
 }
 
@@ -375,7 +375,7 @@
 
 .catalog-pagination-info {
   margin-top: 10px;
-  color: #777982;
+  color: #595b6d;
   font-size: 0.78rem;
   text-align: center;
 }

@@ -28,6 +28,8 @@ import AdminDashboard from './pages/dashboard/adminDashboard';
 
 import PromoterApplicationPage from './pages/promoter/promoterApplicationPage';
 
+import ModeratorApplicationPage from './pages/moderador/moderatorApplicationPage';
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -86,6 +88,22 @@ export default function App() {
                   element={<AdminDashboard />}
                 />
               </Route>
+
+              <Route
+                path="/promoter/application"
+                element={<PromoterApplicationPage />}
+              />
+
+              <Route
+                path="/moderator/application"
+                element={<ModeratorApplicationPage />}
+              />
+
+              {/* Ruta desconocida */}
+              <Route
+                path="*"
+                element={<Navigate to="/" replace />}
+              />
 
               <Route
                 path="/promoter/application"

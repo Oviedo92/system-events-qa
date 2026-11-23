@@ -14,4 +14,11 @@ export class UsersController {
   findAll() {
     return this.usersService.findAll();
   }
+
+  @Get('moderators/availability')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  getModeratorsAvailability() {
+    return this.usersService.getModeratorsAvailability();
+  }
 }

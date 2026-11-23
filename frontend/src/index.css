@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
 :root {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
@@ -12,11 +13,11 @@
   -moz-osx-font-smoothing: grayscale;
 
   --color-brand: #15172b;
-  --color-coral: #ff684a;
-  --color-violet: #7765f8;
+  --color-coral: #c93b2b;
+  --color-violet: #5b46e8;
   --color-surface: #ffffff;
   --color-background: #f7f7fb;
-  --color-muted: #77798b;
+  --color-muted: #595b6d;
   --color-border: #e8e8f0;
 
   --radius-card: 20px;
@@ -67,7 +68,7 @@ a {
 button:focus-visible,
 a:focus-visible,
 input:focus-visible {
-  outline: 3px solid #7765f8;
+  outline: 3px solid #5b46e8;
   outline-offset: 3px;
 }
 
@@ -83,7 +84,7 @@ input {
 
 ::selection {
   color: #ffffff;
-  background: #7765f8;
+  background: #5b46e8;
 }
 
 #root {

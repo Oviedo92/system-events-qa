@@ -27,7 +27,7 @@
   align-items: center;
   gap: 8px;
   margin: 0 0 14px;
-  color: #7765f8;
+  color: #5b46e8;
   font-size: 0.76rem;
   font-weight: 800;
   letter-spacing: 0.12em;
@@ -46,7 +46,7 @@
 .section-description {
   max-width: 560px;
   margin: 12px 0 0;
-  color: #77798b;
+  color: #595b6d;
   font-size: 0.98rem;
   line-height: 1.75;
 }
@@ -64,7 +64,7 @@
 
 .text-link:hover {
   gap: 12px;
-  color: #7765f8;
+  color: #5b46e8;
 }
 
 /* ---------- Navbar ---------- */
@@ -111,7 +111,7 @@
 }
 
 .brand-name span {
-  color: #ff684a;
+  color: #c93b2b;
 }
 
 .nav-links {
@@ -128,7 +128,7 @@
 }
 
 .nav-link:hover {
-  color: #7765f8;
+  color: #5b46e8;
 }
 
 .nav-actions {
@@ -170,8 +170,8 @@
 }
 
 .button-coral {
-  color: #25130f;
-  background: #ff684a;
+  color: #ffffff;
+  background: #c93b2b;
 }
 
 .button-coral:hover {
@@ -249,7 +249,7 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #ff684a;
+  background: #c93b2b;
   box-shadow: 0 0 0 4px rgb(255 104 74 / 13%);
 }
 
@@ -263,13 +263,13 @@
 }
 
 .hero-title .highlight {
-  color: #7765f8;
+  color: #5b46e8;
 }
 
 .hero-description {
   max-width: 600px;
   margin: 0 auto;
-  color: #77798b;
+  color: #595b6d;
   font-size: clamp(1rem, 2vw, 1.12rem);
   line-height: 1.8;
 }
@@ -293,7 +293,7 @@
   justify-content: center;
   gap: 20px;
   margin-top: 24px;
-  color: #77798b;
+  color: #595b6d;
   font-size: 0.8rem;
 }
 
@@ -304,7 +304,7 @@
 }
 
 .hero-note svg {
-  color: #7765f8;
+  color: #5b46e8;
 }
 
 /* ---------- Buscador ---------- */
@@ -336,7 +336,7 @@
 
 .search-field-icon {
   flex-shrink: 0;
-  color: #7765f8;
+  color: #5b46e8;
 }
 
 .search-field-content {
@@ -347,7 +347,7 @@
 }
 
 .search-field label {
-  color: #77798b;
+  color: #595b6d;
   font-size: 0.73rem;
   font-weight: 700;
 }
@@ -372,7 +372,7 @@
 
 .search-field input:focus-visible,
 .search-field select:focus-visible {
-  outline: 2px solid #7765f8;
+  outline: 2px solid #5b46e8;
   outline-offset: 3px;
   border-radius: 3px;
 }
@@ -540,7 +540,7 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  color: #7765f8;
+  color: #5b46e8;
   font-size: 0.78rem;
   font-weight: 750;
 }
@@ -564,7 +564,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #77798b;
+  color: #595b6d;
   font-size: 0.83rem;
 }
 
@@ -588,7 +588,7 @@
 .event-price-label {
   display: block;
   margin-bottom: 3px;
-  color: #77798b;
+  color: #595b6d;
   font-size: 0.73rem;
 }
 
@@ -625,7 +625,7 @@
   padding: 60px 20px;
   border: 1px dashed #dcd9ef;
   border-radius: 20px;
-  color: #77798b;
+  color: #595b6d;
   text-align: center;
 }
 
@@ -710,7 +710,7 @@
   place-items: center;
   border-radius: 28px;
   color: #15172b;
-  background: #ff684a;
+  background: #c93b2b;
   box-shadow: 0 20px 45px rgb(0 0 0 / 20%);
   transform: rotate(9deg);
 }
@@ -743,7 +743,7 @@
 
 .site-footer .brand-mark {
   color: #15172b;
-  background: #ff684a;
+  background: #c93b2b;
 }
 
 .footer-description {
@@ -1084,7 +1084,7 @@
   margin-top: 10px;
   border: none;
   border-radius: 8px;
-  background: #f26b5b;
+  background: #c93b2b;
   color: #ffffff;
   font: inherit;
   cursor: pointer;

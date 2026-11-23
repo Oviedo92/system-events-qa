@@ -13,6 +13,8 @@ import { UsersService } from '../users/users.service';
 
 import { PrismaService } from '../prisma/prisma.service';
 
+import { ConflictException  } from '@nestjs/common';
+
 @Injectable()
 export class AuthService {
     constructor(
@@ -22,29 +24,44 @@ export class AuthService {
     ) { }
 
     async register(body: {
-        name: string;
-        email: string;
-        password: string;
-    }) {
-        const passwordHash = await bcrypt.hash(body.password, 12);
+    name: string;
+    email: string;
+    password: string;
+  }) {
+    const normalizedEmail = body.email.trim().toLowerCase();
+    const passwordHash = await bcrypt.hash(body.password, 12);
 
-        const user = await this.usersService.create(
-            body.name,
-            body.email,
-            passwordHash,
+    try {
+      const user = await this.usersService.create(
+        body.name.trim(),
+        normalizedEmail,
+        passwordHash,
+      );
+
+      return {
+        statusCode: 201,
+        message: 'Usuario registrado correctamente',
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
+      };
+    } catch (error: unknown) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        (error as { code?: string }).code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'Este correo electrónico ya está registrado. Inicia sesión o utiliza otro correo.',
         );
-
-        return {
-            statusCode: 201,
-            message: 'Usuario registrado correctamente',
-            user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-            }
-        };
+      }
+      throw error;
     }
+  }
 
     async login(body: {
         email: string;
