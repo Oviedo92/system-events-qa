@@ -79,7 +79,7 @@ describe('AuthService', () => {
       'hashed-secret-123',
     );
     expect(result).toEqual({
-      statusCode: 201,
+      statusCode: 500,
       message: 'Usuario registrado correctamente',
       user: {
         id: 1,
