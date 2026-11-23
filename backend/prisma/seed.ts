@@ -1,4 +1,4 @@
-
+import * as bcrypt from 'bcrypt';
 import { PrismaClient } from '../src/generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import 'dotenv/config';
@@ -301,13 +301,48 @@ async function main() {
     });
   }
 
-  const organizer = await prisma.user.findUnique({
-    where: { id: 1 },
+  const adminHash = await bcrypt.hash('Ev!Admin_2026#Local', 10);
+  const modHash = await bcrypt.hash('Ev!Mod_2026#Local', 10);
+  const promoHash = await bcrypt.hash('Ev!Promo_2026#Local', 10);
+
+  const organizer = await prisma.user.upsert({
+    where: { email: 'admin@eventia.local' },
+    update: {},
+    create: {
+      name: 'Administrador Eventia',
+      email: 'admin@eventia.local',
+      passwordHash: adminHash,
+      role: 'ADMIN',
+      isVerified: true,
+      verificationBadge: 'VERIFIED_PROMOTER',
+    },
   });
 
-  if (!organizer) {
-    throw new Error('No existe el usuario organizador con ID 1.');
-  }
+  await prisma.user.upsert({
+    where: { email: 'moderador@eventia.local' },
+    update: {},
+    create: {
+      name: 'Moderador Eventia',
+      email: 'moderador@eventia.local',
+      passwordHash: modHash,
+      role: 'MODERATOR',
+      isVerified: true,
+      verificationBadge: 'VERIFIED_MODERATOR',
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: 'promotor@eventia.local' },
+    update: {},
+    create: {
+      name: 'Promotor Eventia',
+      email: 'promotor@eventia.local',
+      passwordHash: promoHash,
+      role: 'PROMOTER',
+      isVerified: true,
+      verificationBadge: 'VERIFIED_PROMOTER',
+    },
+  });
 
   const template = await prisma.eventTemplate.findUnique({
     where: { id: 3 },
